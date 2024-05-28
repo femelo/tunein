@@ -91,10 +91,13 @@ class TuneIn:
         for key, stations in items.items():
             for station in stations:
                 url = station["url"]
+                # Check whether each server is alive
                 if url not in server_alive:
-                    response = requests.head(url, timeout=1)
-                    code = response.status_code
-                    server_alive[url] = str(code).startswith('2') or str(code).startswith('3')
+                    # TODO: find a faster way to check whether each server is up
+                    # response = requests.head(url, timeout=1)
+                    # code = response.status_code
+                    # server_alive[url] = str(code).startswith('2') or str(code).startswith('3')
+                    server_alive[url] = True
                 if not server_alive[url]:
                     stations.remove(station)
         for key, stations in items.items():
