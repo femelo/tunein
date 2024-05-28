@@ -5,7 +5,7 @@ from tunein.xml_helper import xml2dict
 from tunein.parse import fuzzy_match
 
 BASE_DIR = os.getenv("HOME") or os.path.dirname(os.path.abspath(__file__))
-DEFAULT_CACHE_PATH = os.path.join(BASE_DIR, ".cache", "radios.db")
+DEFAULT_CACHE_PATH = os.path.join(BASE_DIR, ".cache", "radios")
 
 
 class TuneInStation:
@@ -87,18 +87,22 @@ class TuneIn:
     def search_cache(query):
         """Search for cached stations."""
         items = TuneIn.cache.get(query, fuzzy=True)
-        dead_indexes = []
-        for i, item in enumerate(items):
-            response = requests.head(item["url"])
-            code = response.status_code
-            if not str(code).startswith('2') and not str(code).startswith('3'):
-                dead_indexes.append(i)
-        if items and dead_indexes:
-            key = items[0].get("title", "")
-            items = [item for i, item in enumerate(items) if i not in dead_indexes]
-            if key:
-                TuneIn.cache.replace(key=key, data=items)
-        return items
+        server_alive = {}
+        for key, stations in items.items():
+            for station in stations:
+                url = station["url"]
+                if url not in server_alive:
+                    response = requests.head(url)
+                    code = response.status_code
+                    server_alive[url] = str(code).startswith('2') or str(code).startswith('3')
+                if not server_alive[url]:
+                    stations.remove(station)
+        for key, stations in items.items():
+            if stations:
+                TuneIn.cache.replace(key=key, data=stations)
+            else:
+                TuneIn.cache.delete(key=key)
+        return sum(list(items.values()), [])
 
     @staticmethod
     def search(query):
@@ -107,15 +111,14 @@ class TuneIn:
             stations = [TuneInStation(item) for item in cached_items]
         else:
             # Search again
-            res = requests.post(
+            response = requests.post(
                 TuneIn.search_url,
                 data={"query": query, "formats": "mp3,aac,ogg,html,hls"}
             )
-            stations = list(TuneIn._get_stations(res, query))
+            stations = list(TuneIn._get_stations(response, query))
             # Update cache
             for station in stations:
-                if station.title.strip():
-                    TuneIn.cache.add(key=station.title, data=station.raw)
+                TuneIn.cache.add(key=query, data=station.raw)
         return stations
 
     @staticmethod
