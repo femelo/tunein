@@ -1,6 +1,5 @@
 import os
 import requests
-import urllib3
 from dead_simple_cache import SimpleCache
 from tunein.xml_helper import xml2dict
 from tunein.parse import fuzzy_match
@@ -90,7 +89,8 @@ class TuneIn:
         items = TuneIn.cache.get(query, fuzzy=True)
         dead_indexes = []
         for i, item in enumerate(items):
-            code = urllib3.urlopen(item["url"]).getcode()
+            response = requests.head(item["url"])
+            code = response.status_code
             if not str(code).startswith('2') and not str(code).startswith('3'):
                 dead_indexes.append(i)
         if items and dead_indexes:
