@@ -1,6 +1,12 @@
+import os
 import requests
+import urllib3
+from dead_simple_cache import SimpleCache
 from tunein.xml_helper import xml2dict
 from tunein.parse import fuzzy_match
+
+BASE_DIR = os.getenv("HOME") or os.path.dirname(os.path.abspath(__file__))
+DEFAULT_CACHE_PATH = os.path.join(BASE_DIR, ".cache", "radios.db")
 
 
 class TuneInStation:
@@ -55,6 +61,7 @@ class TuneInStation:
 class TuneIn:
     search_url = "http://opml.radiotime.com/Search.ashx"
     featured_url = "http://opml.radiotime.com/Browse.ashx?c=local"  # local stations
+    cache = SimpleCache(file_path=DEFAULT_CACHE_PATH)
 
     @staticmethod
     def get_stream_url(url):
@@ -78,9 +85,38 @@ class TuneIn:
         return list(TuneIn._get_stations(res))
 
     @staticmethod
+    def search_cache(query):
+        """Search for cached stations."""
+        items = TuneIn.cache.get(query, fuzzy=True)
+        dead_indexes = []
+        for i, item in enumerate(items):
+            code = urllib3.urlopen(item["url"]).getcode()
+            if not str(code).startswith('2') and not str(code).startswith('3'):
+                dead_indexes.append(i)
+        if items and dead_indexes:
+            key = items[0].get("title", "")
+            items = [item for i, item in enumerate(items) if i not in dead_indexes]
+            if key:
+                TuneIn.cache.replace(key=key, data=items)
+        return items
+
+    @staticmethod
     def search(query):
-        res = requests.post(TuneIn.search_url, data={"query": query, "formats": "mp3,aac,ogg,html,hls"})
-        return list(TuneIn._get_stations(res, query))
+        cached_items = TuneIn.search_cache(query)
+        if cached_items:
+            stations = [TuneInStation(item) for item in cached_items]
+        else:
+            # Search again
+            res = requests.post(
+                TuneIn.search_url,
+                data={"query": query, "formats": "mp3,aac,ogg,html,hls"}
+            )
+            stations = list(TuneIn._get_stations(res, query))
+            # Update cache
+            for station in stations:
+                if station.title.strip():
+                    TuneIn.cache.add(key=station.title, data=station.raw)
+        return stations
 
     @staticmethod
     def _get_stations(res: requests.Response, query: str = ""):
