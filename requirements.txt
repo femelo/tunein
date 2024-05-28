@@ -1,2 +1,2 @@
 requests
-dead-simple-cache
+dead-simple-cache>=1.2.0

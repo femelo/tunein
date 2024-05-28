@@ -92,7 +92,7 @@ class TuneIn:
             for station in stations:
                 url = station["url"]
                 if url not in server_alive:
-                    response = requests.head(url)
+                    response = requests.head(url, timeout=1)
                     code = response.status_code
                     server_alive[url] = str(code).startswith('2') or str(code).startswith('3')
                 if not server_alive[url]:
