@@ -148,7 +148,7 @@ class TuneIn:
                 TuneIn._get_stations(res.json().get("body", []), query)
             )
             # Update cache
-            for station in filter(lambda s: s.title !='', stations):
+            for station in filter(lambda s: s.title != '', stations):
                 TuneIn.cache.add(key=query, data=station.raw)
         return stations
 
