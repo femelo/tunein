@@ -2,7 +2,15 @@
 
 ## [Unreleased](https://github.com/OpenJarbas/tunein/tree/HEAD)
 
-[Full Changelog](https://github.com/OpenJarbas/tunein/compare/V0.0.4a1...HEAD)
+[Full Changelog](https://github.com/OpenJarbas/tunein/compare/V0.0.4a2...HEAD)
+
+**Implemented enhancements:**
+
+- Add multi stream support [\#6](https://github.com/OpenJarbas/tunein/pull/6) ([cidrblock](https://github.com/cidrblock))
+
+## [V0.0.4a2](https://github.com/OpenJarbas/tunein/tree/V0.0.4a2) (2023-11-16)
+
+[Full Changelog](https://github.com/OpenJarbas/tunein/compare/V0.0.4a1...V0.0.4a2)
 
 **Implemented enhancements:**
 
