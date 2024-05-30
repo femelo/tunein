@@ -163,7 +163,7 @@ class TuneIn:
         # NOTE: to make the cache persistent on disk, it is necessary to sync it,
         # but since the cache is a static attribute, one must open/close it explicitly.
         # To make the cache persistent on disk, uncomment the following line.
-        TuneIn.cache.close()
+        # TuneIn.cache.close()
         return stations
 
     @staticmethod
