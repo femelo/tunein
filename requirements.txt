@@ -1,2 +1,2 @@
 requests~=2.31.0
-dead-simple-cache>=1.2.1
+dead-simple-cache>=1.2.2

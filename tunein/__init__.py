@@ -71,7 +71,9 @@ class TuneIn:
     search_url = "https://opml.radiotime.com/Search.ashx"
     featured_url = "http://opml.radiotime.com/Browse.ashx"  # local stations
     stnd_query = {"formats": "mp3,aac,ogg,html,hls", "render": "json"}
-    cache = SimpleCache(file_path=DEFAULT_CACHE_PATH)
+    # NOTE: to make the cache persistent on disk, it is necessary to close,
+    # but since the cache is a static attribute, we must open/close explicitly
+    cache = SimpleCache(file_path=DEFAULT_CACHE_PATH, open=False)
 
     @staticmethod
     def get_stream_urls(url):
@@ -135,6 +137,9 @@ class TuneIn:
 
     @staticmethod
     def search(query):
+        # NOTE: to make the cache persistent on disk, it is necessary to close,
+        # but since the cache is a static attribute, we must open/close explicitly
+        TuneIn.cache.open()
         cached_items = TuneIn.search_cache(query)
         if cached_items:
             stations = [TuneInStation(item) for item in cached_items]
@@ -150,6 +155,9 @@ class TuneIn:
             # Update cache
             for station in filter(lambda s: s.title != '', stations):
                 TuneIn.cache.add(key=query, data=station.raw)
+        # NOTE: to make the cache persistent on disk, it is necessary to close,
+        # but since the cache is a static attribute, we must open/close explicitly
+        TuneIn.cache.close()
         return stations
 
     @staticmethod
