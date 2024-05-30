@@ -3,6 +3,7 @@ import requests
 from dead_simple_cache import SimpleCache
 from urllib.parse import urlparse, urlunparse
 from tunein.parse import fuzzy_match
+from ovos_utils.log import LOG
 
 BASE_DIR = os.getenv("HOME") or os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CACHE_PATH = os.path.join(BASE_DIR, ".cache", "radios")
@@ -71,9 +72,7 @@ class TuneIn:
     search_url = "https://opml.radiotime.com/Search.ashx"
     featured_url = "http://opml.radiotime.com/Browse.ashx"  # local stations
     stnd_query = {"formats": "mp3,aac,ogg,html,hls", "render": "json"}
-    # NOTE: to make the cache persistent on disk, it is necessary to close,
-    # but since the cache is a static attribute, we must open/close explicitly
-    cache = SimpleCache(file_path=DEFAULT_CACHE_PATH, open=False)
+    cache = SimpleCache(file_path=DEFAULT_CACHE_PATH)
 
     @staticmethod
     def get_stream_urls(url):
@@ -93,14 +92,20 @@ class TuneIn:
 
         stations = res.json().get("body", {})
 
+        working_stations = []
         for station in stations:
             if station.get("url", "").endswith(".pls"):
-                res = requests.get(station["url"])
+                # TODO: come up with a better fix 
+                # Catch and avoid invalid certificate errors
+                try:
+                    res = requests.get(station["url"])
+                except Exception:
+                    continue
                 file1 = [line for line in res.text.split("\n") if line.startswith("File1=")]
                 if file1:
                     station["url"] = file1[0].split("File1=")[1]
-
-        return stations
+                working_stations.append(station)
+        return working_stations
 
     @staticmethod
     def featured():
@@ -137,9 +142,10 @@ class TuneIn:
 
     @staticmethod
     def search(query):
-        # NOTE: to make the cache persistent on disk, it is necessary to close,
-        # but since the cache is a static attribute, we must open/close explicitly
-        TuneIn.cache.open()
+        # NOTE: to make the cache persistent on disk, it is necessary to sync it,
+        # but since the cache is a static attribute, one must open/close it explicitly.
+        # To make the cache persistent on disk, uncomment the following line.
+        # TuneIn.cache.open()
         cached_items = TuneIn.search_cache(query)
         if cached_items:
             stations = [TuneInStation(item) for item in cached_items]
@@ -155,8 +161,9 @@ class TuneIn:
             # Update cache
             for station in filter(lambda s: s.title != '', stations):
                 TuneIn.cache.add(key=query, data=station.raw)
-        # NOTE: to make the cache persistent on disk, it is necessary to close,
-        # but since the cache is a static attribute, we must open/close explicitly
+        # NOTE: to make the cache persistent on disk, it is necessary to sync it,
+        # but since the cache is a static attribute, one must open/close it explicitly.
+        # To make the cache persistent on disk, uncomment the following line.
         TuneIn.cache.close()
         return stations
 
