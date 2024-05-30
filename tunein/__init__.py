@@ -3,7 +3,6 @@ import requests
 from dead_simple_cache import SimpleCache
 from urllib.parse import urlparse, urlunparse
 from tunein.parse import fuzzy_match
-from ovos_utils.log import LOG
 
 BASE_DIR = os.getenv("HOME") or os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CACHE_PATH = os.path.join(BASE_DIR, ".cache", "radios")
